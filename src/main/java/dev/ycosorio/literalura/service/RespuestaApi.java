@@ -17,5 +17,16 @@ public record RespuestaApi(
 @JsonIgnoreProperties(ignoreUnknown = true)
 record RespuestaLibro(
         Integer id,
-        @JsonAlias("title") String titulo
+        @JsonAlias("title") String titulo,
+        @JsonAlias("authors") List<RespuestaAutor> autores,
+        @JsonAlias("languages") List<String> idiomas,
+        @JsonAlias("bookshelves") List<String> categorias,
+        @JsonAlias("download_count") Integer numeroDescargas
         ){}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+record RespuestaAutor(
+        @JsonAlias("name") String nombre,
+        @JsonAlias("birth_year") Integer nacimiento,
+        @JsonAlias("death_year") Integer muerte
+){}

@@ -7,7 +7,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ServicioLibro {
@@ -41,10 +40,14 @@ public class ServicioLibro {
             HttpResponse<String> respuesta = cliente.send(solicitud, HttpResponse.BodyHandlers.ofString());
             RespuestaApi data = mapper.readValue(respuesta.body(), RespuestaApi.class);
 
-
-            data.listaDeLibros().stream().forEach(System.out::println);
+            data.listaDeLibros().stream().forEach(l->
+                    System.out.println("Título: "+l.titulo()+", Autores:"+l.autores()));
         } catch (Exception e) {
             throw new RuntimeException("Error al conectar con la API: " + e.getMessage());
         }
+    }
+
+    public void irApagina (Integer numeroPagina){
+
     }
 }
