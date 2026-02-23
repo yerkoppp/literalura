@@ -43,7 +43,7 @@ Durante el desarrollo de este proyecto, se implementaron soluciones a problemas 
 
 1. Clona este repositorio:
    ```bash
-   git clone [https://github.com/yerkoppp/literalura.git](https://github.com/yerkoppp/literalura.git)
+   git clone https://github.com/yerkoppp/literalura.git
 3. Configura tu base de datos PostgreSQL. Crea una base de datos llamada literalura.
 
 3. Configura las variables de entorno en tu IDE o modifica el archivo src/main/resources/application.properties con tus credenciales:
