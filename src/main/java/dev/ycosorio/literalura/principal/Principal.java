@@ -8,6 +8,8 @@ import dev.ycosorio.literalura.repository.AutorRepository;
 import dev.ycosorio.literalura.repository.LibrosRepository;
 import dev.ycosorio.literalura.service.ConsumoApi;
 import dev.ycosorio.literalura.service.ConvierteDatos;
+import dev.ycosorio.literalura.service.ServicioLibro;
+
 import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
@@ -28,14 +30,10 @@ public class Principal {
     private final ConsumoApi consumoApi = new ConsumoApi();
     private final ConvierteDatos conversor = new ConvierteDatos();
 
-    private final LibrosRepository librosRepositorio;
-    private final AutorRepository autorRepository;
-
-    public Principal(LibrosRepository librosRepositorio, AutorRepository autorRepository){
-        this.librosRepositorio = librosRepositorio;
-        this.autorRepository = autorRepository;
+    private final ServicioLibro servicioLibro;
+    public Principal(ServicioLibro servicioLibro){
+        this.servicioLibro = servicioLibro;
     }
-
 
     public void inicializarLista(String busqueda){
         var json = consumoApi.obtenerDatos(BASE_URL+busqueda);
@@ -112,16 +110,7 @@ public class Principal {
                     .filter(l -> l.id().equals(id))
                     .findFirst()
                     .ifPresent(l -> {
-                        Libro libro = new Libro(l);
-                        List<Autor> autoresDB = l.autores().stream()
-                                .map(a -> autorRepository.findByNombre(a.nombre())
-                                        .orElseGet(()-> autorRepository
-                                                .save(new Autor(a.nombre(),a.nacimiento(),a.muerte()))))
-                                .collect(Collectors.toList());
-                        autoresDB.forEach(a-> a.getLibrosEscritos().add(libro));
-                        libro.setAutores(autoresDB);
-
-                        librosRepositorio.save(libro);
+                        servicioLibro.guardarLibro(l);
                         System.out.println(VERDE + NEGRITA + "✅ ¡Libro guardado exitosamente en la base de datos!" + RESET);
                         System.out.println(CIAN + "-".repeat(60) + RESET);
                     });
@@ -131,7 +120,7 @@ public class Principal {
     }
 
     private void mostrarLibrosRegistrados() {
-        List<Libro> libros = librosRepositorio.findAll();
+        List<Libro> libros = servicioLibro.listarLibros();
 
         if (libros.isEmpty()) {
             System.out.println(AMARILLO + "📭 La base de datos está vacía. Use la opción 1 para buscar y guardar libros primero." + RESET);
@@ -140,7 +129,7 @@ public class Principal {
         libros.forEach(System.out::println);
     }
     private void mostrarAutoresRegistrados() {
-        List<Autor> autores = autorRepository.findAll();
+        List<Autor> autores = servicioLibro.listarAutores();
 
         if (autores.isEmpty()) {
             System.out.println(AMARILLO + "📭 La base de datos está vacía. Use la opción 1 para buscar y guardar libros primero." + RESET);
@@ -149,7 +138,7 @@ public class Principal {
         autores.forEach(System.out::println);
     }
     private void mostrarAutoresVivos() {
-        List<Autor> autores = autorRepository.findAll();
+        List<Autor> autores = servicioLibro.listarAutores();
 
         if (autores.isEmpty()) {
             System.out.println(AMARILLO + "📭 La base de datos está vacía. Use la opción 1 para buscar y guardar libros primero." + RESET);
@@ -158,14 +147,14 @@ public class Principal {
         System.out.println("Indique un año:");
         try {
             Integer anio = Integer.valueOf(sc.nextLine());
-            autorRepository.autoresVivosEnDeterminadoAnio(anio).forEach(System.out::println);
+            servicioLibro.listarAutoresVivos(anio).forEach(System.out::println);
         } catch (NumberFormatException e){
             System.out.println(AMARILLO + "⚠️ Error: Entrada inválida. Por favor, ingrese únicamente números (ej: 1850)." + RESET);
         }
         }
 
     private void mostrarLibrosPorIdioma() {
-        List<String> idiomas = librosRepositorio.findIdiomasRegistrados();
+        List<String> idiomas = servicioLibro.listarIdiomas();
 
         if (idiomas.isEmpty()) {
             System.out.println(AMARILLO + "📭 La base de datos está vacía. Use la opción 1 para buscar y guardar libros primero." + RESET);
@@ -201,7 +190,7 @@ public class Principal {
                 nombreIdioma = nombreIdioma.substring(0, 1).toUpperCase() + nombreIdioma.substring(1);
 
                 System.out.println("\nBuscando libros en: " + nombreIdioma);
-                librosRepositorio.findByIdiomas(codigoSeleccionado).forEach(System.out::println);
+                servicioLibro.listarLibrosPorIdioma(codigoSeleccionado).forEach(System.out::println);
             } else {
                 System.out.println("Opción inválida.");
             }
@@ -214,31 +203,33 @@ public class Principal {
     public void mostrarLibrosPorAutor(){
         System.out.println("Ingrese un autor: ");
         var autorBuscado = sc.nextLine().toLowerCase();
-        List<Libro> librosDelAutor = librosRepositorio.findByAutoresNombreContainingIgnoreCase(autorBuscado);
+        List<Libro> librosDelAutor = servicioLibro.buscarLibrosPorAutor(autorBuscado);
         if(!librosDelAutor.isEmpty()){
             librosDelAutor.forEach(System.out::println);
             return;
         }
-        System.out.println(AMARILLO + "📭 La base de datos está vacíaNo se encontraron libros del autor. Use la opción 1 para buscar y guardar libros primero." + RESET);
+        System.out.println(AMARILLO + "No se encontraron libros del autor en la base de datos.\n Use la opción 1 para buscar y guardar libros primero." + RESET);
     }
 
     private void mostrarTop10() {
         System.out.println("Top 10 Descargas");
-        librosRepositorio.findTop10ByOrderByNumeroDescargasDesc().forEach(System.out::println);
+        servicioLibro.listarTop10().forEach(System.out::println);
     }
 
     private void generarEstadisticas() {
-        var libros = librosRepositorio.findAll();
+        var libros = servicioLibro.listarLibros();
 
         if (libros.isEmpty()) {
             System.out.println(AMARILLO + "📭 La base de datos está vacía, no se pueden calcular las estadísticas.\n Use la opción 1 para buscar y guardar libros primero." + RESET);
             return;
         }
 
-        java.util.DoubleSummaryStatistics est = libros.stream()
-                .filter(l -> l.getNumeroDescargas() != null)
-                .mapToDouble(Libro::getNumeroDescargas)
-                .summaryStatistics();
+        java.util.DoubleSummaryStatistics est = servicioLibro.generarEstadisticas();
+
+        if (est.getCount() == 0) {
+            System.out.println(AMARILLO + "📭 La base de datos está vacía, no se pueden calcular las estadísticas.\n Use la opción 1 para buscar y guardar libros primero." + RESET);
+            return;
+        }
 
         System.out.println(CIAN + NEGRITA + "\n📊 --- Estadísticas Globales de Descargas ---" + RESET);
         System.out.println("Promedio de descargas: " + VERDE + Math.round(est.getAverage()) + RESET);
