@@ -2,6 +2,7 @@ package dev.ycosorio.literalura.model;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -13,7 +14,7 @@ public class Libro {
     private Long id;
     @Column(unique = true)
     private String titulo;
-    @ManyToMany(mappedBy = "libros", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToMany(cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
     private List<Autor> autores;
     @ElementCollection(fetch = FetchType.EAGER)
     private List<String> idiomas;
@@ -26,10 +27,6 @@ public class Libro {
     public Libro(RespuestaLibro respuestaLibro) {
         //this.id = respuestaLibro.id();
         this.titulo = respuestaLibro.titulo();
-        this.autores = respuestaLibro.autores().stream()
-                .map(a ->
-                        new Autor(a.nombre(),a.nacimiento(),a.muerte()))
-                .collect(Collectors.toList());
         this.idiomas = respuestaLibro.idiomas();
         this.categorias = respuestaLibro.categorias();
         this.numeroDescargas = respuestaLibro.numeroDescargas();
@@ -94,10 +91,9 @@ public class Libro {
     @Override
     public String toString() {
         return "Título: '" + titulo + '\'' +
-                ", Autores: " + autores +
+                ", Autores: " + autores.toString() +
                 ", Descargas: " + numeroDescargas +
                 ", Idiomas: " + idiomas +
-                ", Categorías: " + categorias +
-                '}';
+                '.';
     }
 }

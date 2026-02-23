@@ -11,8 +11,17 @@ import dev.ycosorio.literalura.service.ConvierteDatos;
 import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class Principal {
+
+    // Códigos ANSI para colores y estilos
+    private final String RESET = "\u001B[0m";
+    private final String CIAN = "\u001B[36m";
+    private final String VERDE = "\u001B[32m";
+    private final String AMARILLO = "\u001B[33m";
+    private final String CURSIVA = "\u001B[3m";
+    private final String NEGRITA = "\u001B[1m";
 
     private Scanner sc = new Scanner(System.in);
     private static final String BASE_URL = "https://gutendex.com/books/";
@@ -27,21 +36,12 @@ public class Principal {
         this.autorRepository = autorRepository;
     }
 
-    public void obtenerLibros(){
-        try {
-            inicializarLista("");
-        } catch (Exception e) {
-            System.err.println("[!] Alerta: No se pudieron cargar los libros en tiempo real.");
-            System.err.println("Motivo: " + e.getMessage());
-        }
-    }
 
     public void inicializarLista(String busqueda){
         var json = consumoApi.obtenerDatos(BASE_URL+busqueda);
         RespuestaApi datos = conversor.obtenerDatos(json, RespuestaApi.class);
         if(datos.cantidad()==0){
-            System.out.println("Libro no encontrado, intente con otro.");
-        }
+            System.out.println(AMARILLO + "⚠️ No se encontraron resultados para su búsqueda. Intente con otras palabras." + RESET);}
         else {
             datos.listaDeLibros().stream().forEach(l ->
                     System.out.println("(ID: "+l.id() + ") Título: " + l.titulo() + ", Autores:" + l.autores()));
@@ -52,22 +52,29 @@ public class Principal {
     public void mostrarMenu(){
         var opcion = -1;
         while (opcion != 0) {
-            var menu = """
+            var menu = CIAN + NEGRITA + """
                     
-                    -------- Menú --------
-                    1 - Buscar libro por título 
+                    ╭────────────────────────────────────────╮
+                    │           📚 LiterAlura 📚             │
+                    ╰────────────────────────────────────────╯
+                    """ + RESET + VERDE + """
+                    1 - Buscar libro por título y/o autor
                     2 - Listar libros registrados
                     3 - Listar autores registrados
                     4 - Listar autores vivos en un determinado año
                     5 - Listar libros por idioma
+                    6 - Buscar libros por autor
+                    7 - Listar Top 10 más descargados
+                    8 - Ver estadísticas generales
                     0 - Salir
                     ----------------------
-                    """;
+                    """+ RESET;
             System.out.println(menu);
+            System.out.print(CURSIVA + CIAN + "Elija una opción: " + RESET);
             try {
                 opcion = Integer.parseInt(sc.nextLine());
             } catch (NumberFormatException e) {
-                opcion = -1; // Forzamos al default del switch
+                opcion = -1;
             }
 
             switch (opcion) {
@@ -76,11 +83,15 @@ public class Principal {
                 case 3 -> mostrarAutoresRegistrados();
                 case 4 -> mostrarAutoresVivos();
                 case 5 -> mostrarLibrosPorIdioma();
-                case 0 -> System.out.println("Cerrando la aplicación...");
-                default -> System.out.println("Opción inválida, intente nuevamente.");
+                case 6 -> mostrarLibrosPorAutor();
+                case 7 -> mostrarTop10();
+                case 8 -> generarEstadisticas();
+                case 0 -> System.out.println(AMARILLO + "Cerrando la aplicación... ¡Hasta pronto!" + RESET);
+                default -> System.out.println(AMARILLO + "⚠️ Opción inválida. Por favor, seleccione un número del menú." + RESET);
             }
         }
     }
+
 
     private void buscarLibrosEnApi() {
         System.out.println("¿Qué libro desea buscar?: ");
@@ -90,8 +101,8 @@ public class Principal {
     }
 
     private void guardarLibro(List<RespuestaLibro> respuestaLibros){
-        System.out.println("-".repeat(60));
-        System.out.println("Ingrese el ID del libro que desea guardar o presione 0 para salir: ");
+        System.out.println(CIAN + "-".repeat(60) + RESET);
+        System.out.print(CURSIVA + CIAN + "Ingrese el ID del libro que desea guardar (o 0 para cancelar): " + RESET);
         try {
             Long id = Long.valueOf(sc.nextLine());
 
@@ -101,58 +112,70 @@ public class Principal {
                     .filter(l -> l.id().equals(id))
                     .findFirst()
                     .ifPresent(l -> {
-                        librosRepositorio.save(new Libro(l));
-                        System.out.println("Libro guardado en la base de datos.");
-                        System.out.println("-".repeat(60));
+                        Libro libro = new Libro(l);
+                        List<Autor> autoresDB = l.autores().stream()
+                                .map(a -> autorRepository.findByNombre(a.nombre())
+                                        .orElseGet(()-> autorRepository
+                                                .save(new Autor(a.nombre(),a.nacimiento(),a.muerte()))))
+                                .collect(Collectors.toList());
+                        autoresDB.forEach(a-> a.getLibrosEscritos().add(libro));
+                        libro.setAutores(autoresDB);
+
+                        librosRepositorio.save(libro);
+                        System.out.println(VERDE + NEGRITA + "✅ ¡Libro guardado exitosamente en la base de datos!" + RESET);
+                        System.out.println(CIAN + "-".repeat(60) + RESET);
                     });
         } catch (NumberFormatException e) { //Evita el crash si no ingresan números
-            System.out.println("Debe ingresar un número válido.");
+            System.out.println(AMARILLO + "⚠️ Error: Debe ingresar exclusivamente números." + RESET);
         }
     }
-
 
     private void mostrarLibrosRegistrados() {
         List<Libro> libros = librosRepositorio.findAll();
 
         if (libros.isEmpty()) {
-            System.out.println("Aún no hay autores registrados.");
+            System.out.println(AMARILLO + "📭 La base de datos está vacía. Use la opción 1 para buscar y guardar libros primero." + RESET);
             return;
         }
-        librosRepositorio.findAll().stream().forEach(System.out::println);
+        libros.forEach(System.out::println);
     }
     private void mostrarAutoresRegistrados() {
         List<Autor> autores = autorRepository.findAll();
 
         if (autores.isEmpty()) {
-            System.out.println("Aún no hay autores registrados.");
+            System.out.println(AMARILLO + "📭 La base de datos está vacía. Use la opción 1 para buscar y guardar libros primero." + RESET);
             return;
         }
-        autores.stream().forEach(System.out::println);
+        autores.forEach(System.out::println);
     }
     private void mostrarAutoresVivos() {
         List<Autor> autores = autorRepository.findAll();
 
         if (autores.isEmpty()) {
-            System.out.println("Aún no hay autores registrados.");
+            System.out.println(AMARILLO + "📭 La base de datos está vacía. Use la opción 1 para buscar y guardar libros primero." + RESET);
             return;
         }
         System.out.println("Indique un año:");
-        Integer anio = Integer.valueOf(sc.nextLine());
-        autorRepository.autoresVivosEnDeterminadoAnio(anio).stream().forEach(System.out::println);
-    }
+        try {
+            Integer anio = Integer.valueOf(sc.nextLine());
+            autorRepository.autoresVivosEnDeterminadoAnio(anio).forEach(System.out::println);
+        } catch (NumberFormatException e){
+            System.out.println(AMARILLO + "⚠️ Error: Entrada inválida. Por favor, ingrese únicamente números (ej: 1850)." + RESET);
+        }
+        }
 
     private void mostrarLibrosPorIdioma() {
         List<String> idiomas = librosRepositorio.findIdiomasRegistrados();
 
         if (idiomas.isEmpty()) {
-            System.out.println("Aún no hay libros registrados.");
+            System.out.println(AMARILLO + "📭 La base de datos está vacía. Use la opción 1 para buscar y guardar libros primero." + RESET);
             return;
         }
 
         menuIdiomas(idiomas);
     }
 
-    private void menuIdiomas(List<String> idiomas){
+    private void menuIdiomas(List<String> idiomas) {
 
         System.out.println("\n--- Idiomas disponibles ---");
         for (int i = 0; i < idiomas.size(); i++) {
@@ -186,5 +209,42 @@ public class Principal {
             System.out.println("Debe ingresar un número válido.");
         }
 
+    }
+
+    public void mostrarLibrosPorAutor(){
+        System.out.println("Ingrese un autor: ");
+        var autorBuscado = sc.nextLine().toLowerCase();
+        List<Libro> librosDelAutor = librosRepositorio.findByAutoresNombreContainingIgnoreCase(autorBuscado);
+        if(!librosDelAutor.isEmpty()){
+            librosDelAutor.forEach(System.out::println);
+            return;
+        }
+        System.out.println(AMARILLO + "📭 La base de datos está vacíaNo se encontraron libros del autor. Use la opción 1 para buscar y guardar libros primero." + RESET);
+    }
+
+    private void mostrarTop10() {
+        System.out.println("Top 10 Descargas");
+        librosRepositorio.findTop10ByOrderByNumeroDescargasDesc().forEach(System.out::println);
+    }
+
+    private void generarEstadisticas() {
+        var libros = librosRepositorio.findAll();
+
+        if (libros.isEmpty()) {
+            System.out.println(AMARILLO + "📭 La base de datos está vacía, no se pueden calcular las estadísticas.\n Use la opción 1 para buscar y guardar libros primero." + RESET);
+            return;
+        }
+
+        java.util.DoubleSummaryStatistics est = libros.stream()
+                .filter(l -> l.getNumeroDescargas() != null)
+                .mapToDouble(Libro::getNumeroDescargas)
+                .summaryStatistics();
+
+        System.out.println(CIAN + NEGRITA + "\n📊 --- Estadísticas Globales de Descargas ---" + RESET);
+        System.out.println("Promedio de descargas: " + VERDE + Math.round(est.getAverage()) + RESET);
+        System.out.println("Mayor cantidad:        " + VERDE + est.getMax() + RESET);
+        System.out.println("Menor cantidad:        " + VERDE + est.getMin() + RESET);
+        System.out.println("Total evaluados:       " + VERDE + est.getCount() + RESET);
+        System.out.println(CIAN + "---------------------------------------------" + RESET);
     }
 }

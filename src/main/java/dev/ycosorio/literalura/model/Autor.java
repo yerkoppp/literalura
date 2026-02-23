@@ -2,6 +2,7 @@ package dev.ycosorio.literalura.model;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -15,8 +16,8 @@ public class Autor {
     private String nombre;
     private Integer nacimiento;
     private Integer muerte;
-    @ManyToMany
-    private List<Libro> libros;
+    @ManyToMany(mappedBy = "autores", fetch = FetchType.EAGER)
+    private List<Libro> libros = new ArrayList<>();
     public Autor(){}
 
     public Autor (RespuestaAutor respuestaAutor){
