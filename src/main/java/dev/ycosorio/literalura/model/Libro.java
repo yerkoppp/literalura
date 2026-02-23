@@ -2,9 +2,7 @@ package dev.ycosorio.literalura.model;
 
 import jakarta.persistence.*;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "libros")
@@ -25,7 +23,6 @@ public class Libro {
     public Libro(){}
 
     public Libro(RespuestaLibro respuestaLibro) {
-        //this.id = respuestaLibro.id();
         this.titulo = respuestaLibro.titulo();
         this.idiomas = respuestaLibro.idiomas();
         this.categorias = respuestaLibro.categorias();

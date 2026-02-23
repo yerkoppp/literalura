@@ -1,6 +1,5 @@
 package dev.ycosorio.literalura.repository;
 
-import dev.ycosorio.literalura.model.Autor;
 import dev.ycosorio.literalura.model.Libro;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

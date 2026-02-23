@@ -23,13 +23,13 @@ public class Principal {
     private final String CURSIVA = "\u001B[3m";
     private final String NEGRITA = "\u001B[1m";
 
-    private Scanner sc = new Scanner(System.in);
+    private final Scanner sc = new Scanner(System.in);
     private static final String BASE_URL = "https://gutendex.com/books/";
-    private ConsumoApi consumoApi = new ConsumoApi();
-    private ConvierteDatos conversor = new ConvierteDatos();
+    private final ConsumoApi consumoApi = new ConsumoApi();
+    private final ConvierteDatos conversor = new ConvierteDatos();
 
-    private LibrosRepository librosRepositorio;
-    private AutorRepository autorRepository;
+    private final LibrosRepository librosRepositorio;
+    private final AutorRepository autorRepository;
 
     public Principal(LibrosRepository librosRepositorio, AutorRepository autorRepository){
         this.librosRepositorio = librosRepositorio;
@@ -43,7 +43,7 @@ public class Principal {
         if(datos.cantidad()==0){
             System.out.println(AMARILLO + "⚠️ No se encontraron resultados para su búsqueda. Intente con otras palabras." + RESET);}
         else {
-            datos.listaDeLibros().stream().forEach(l ->
+            datos.listaDeLibros().forEach(l ->
                     System.out.println("(ID: "+l.id() + ") Título: " + l.titulo() + ", Autores:" + l.autores()));
             guardarLibro(datos.listaDeLibros());
         }
