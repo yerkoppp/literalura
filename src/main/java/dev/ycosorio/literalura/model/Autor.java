@@ -1,14 +1,29 @@
 package dev.ycosorio.literalura.model;
 
+import jakarta.persistence.*;
+
 import java.util.List;
 
+@Entity
+@Table(name="autores")
 public class Autor {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    @Column(unique = true)
     private String nombre;
     private Integer nacimiento;
     private Integer muerte;
-    private List<Libro> librosEscritos;
-    Autor(){}
+    @ManyToMany
+    private List<Libro> libros;
+    public Autor(){}
+
+    public Autor (RespuestaAutor respuestaAutor){
+        this.nombre = respuestaAutor.nombre();
+        this.nacimiento = respuestaAutor.nacimiento();
+        this.muerte = respuestaAutor.muerte();
+    }
     public Autor(String nombre, Integer nacimiento, Integer muerte) {
         this.nombre = nombre;
         this.nacimiento = nacimiento;
@@ -40,11 +55,11 @@ public class Autor {
     }
 
     public List<Libro> getLibrosEscritos() {
-        return librosEscritos;
+        return libros;
     }
 
-    public void setLibrosEscritos(List<Libro> librosEscritos) {
-        this.librosEscritos = librosEscritos;
+    public void setLibros(List<Libro> libros) {
+        this.libros = libros;
     }
 
     @Override

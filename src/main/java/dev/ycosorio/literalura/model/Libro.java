@@ -1,30 +1,53 @@
 package dev.ycosorio.literalura.model;
 
-import java.util.List;
+import jakarta.persistence.*;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Entity
+@Table(name = "libros")
 public class Libro {
-    private Integer id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    @Column(unique = true)
     private String titulo;
+    @ManyToMany(mappedBy = "libros", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Autor> autores;
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<String> idiomas;
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<String> categorias;
     private Integer numeroDescargas;
 
-    Libro(){}
+    public Libro(){}
 
-    public Libro(Integer id, String titulo, List<Autor> autores, List<String> idiomas, List<String> categorias) {
+    public Libro(RespuestaLibro respuestaLibro) {
+        //this.id = respuestaLibro.id();
+        this.titulo = respuestaLibro.titulo();
+        this.autores = respuestaLibro.autores().stream()
+                .map(a ->
+                        new Autor(a.nombre(),a.nacimiento(),a.muerte()))
+                .collect(Collectors.toList());
+        this.idiomas = respuestaLibro.idiomas();
+        this.categorias = respuestaLibro.categorias();
+        this.numeroDescargas = respuestaLibro.numeroDescargas();
+    }
+    public Libro(Long id, String titulo, List<Autor> autores, List<String> idiomas, List<String> categorias, Integer numeroDescargas) {
         this.id = id;
         this.titulo = titulo;
         this.autores = autores;
         this.idiomas = idiomas;
         this.categorias = categorias;
+        this.numeroDescargas = numeroDescargas;
     }
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
